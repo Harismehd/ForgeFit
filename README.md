@@ -1,117 +1,123 @@
 # ForgeFit
 
-ForgeFit is a production-oriented fitness web app for gym members who train without a personal trainer. It includes JWT authentication, protected routes, Prisma/PostgreSQL persistence, structured workout plans, real YouTube exercise demos, set logging, workout history, progress metrics, charts, search/filter, and a mobile-first dark SaaS interface.
+ForgeFit is a premium self-guided gym training app built with Next.js 15, Supabase Auth, Supabase Postgres, Row Level Security, Tailwind CSS, Framer Motion, Zustand, and TanStack Query.
 
-## Stack
+The app no longer uses Prisma, a local PostgreSQL connection string, custom JWT handling, or password hashing in application code. Authentication and database access now run through Supabase.
 
-- Next.js 15 App Router
-- TypeScript
-- Tailwind CSS with shadcn-style primitives
-- Framer Motion
-- Zustand
-- TanStack Query
-- Prisma ORM
-- PostgreSQL
-- JWT auth with httpOnly cookies
+## Local Environment
 
-## Local Setup
+Create `.env.local` in the project root:
 
-1. Install dependencies:
+```env
+NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+Do not add service-role keys to this app. The anon key is safe for browser/server use only because database access is protected by RLS.
+
+## Supabase Setup
+
+1. Go to [Supabase](https://supabase.com), create a new project, and choose a strong database password.
+2. Open `Project Settings > API`.
+3. Copy `Project URL` into `NEXT_PUBLIC_SUPABASE_URL`.
+4. Copy the `anon public` key into `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+5. Open `Authentication > Providers > Email`.
+6. For easiest local testing, turn off email confirmation. For production, turn it on and configure SMTP.
+7. Open `SQL Editor`.
+8. Paste and run the full SQL from `supabase.sql`.
+
+The SQL creates:
+
+- `profiles`
+- `workout_plans`
+- `workouts`
+- `exercises`
+- `workout_exercises`
+- `workout_history`
+- `exercise_logs`
+- `user_progress`
+- Supabase Auth profile trigger
+- RLS policies for catalog reads and user-owned private data
+- Real workout plan and exercise seed data
+
+## Run Locally
 
 ```bash
 npm install
-```
-
-2. Create `.env` from `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
-On Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-3. Set `DATABASE_URL` to a PostgreSQL database. Local Postgres, Supabase, Neon, and Railway all work. If you have Docker installed, you can start the included local database:
-
-```bash
-docker compose up -d
-```
-
-4. Generate Prisma client and create tables:
-
-```bash
-npm run db:push
-```
-
-5. Seed workout plans, real exercise demos, and a demo member:
-
-```bash
-npm run prisma:seed
-```
-
-6. Start the app:
-
-```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Demo Login
+Create a new account from the signup page, then log workouts normally.
 
-- Email: `demo@forgefit.app`
-- Password: `ForgeFit123!`
+## Verify Migration
 
-## How To Test It
+1. In Supabase `Table Editor`, confirm `workout_plans`, `workouts`, `exercises`, and `workout_exercises` contain seeded rows.
+2. Sign up in ForgeFit.
+3. Confirm Supabase `Authentication > Users` shows the new user.
+4. Confirm `profiles` has a row with the same user id.
+5. Start today&apos;s workout, complete at least one set, then finish the workout.
+6. Confirm rows appear in `workout_history`, `exercise_logs`, and `user_progress`.
+7. Log out and log back in.
+8. Confirm Dashboard, History, Exercises, and Profile still load.
 
-1. Log in with the demo account.
-2. Visit Dashboard and confirm today&apos;s workout, weekly progress, streak, calories, and chart load from API data.
-3. Open Plans and confirm structured workout plans render with exercises.
-4. Start Today&apos;s Workout, enter reps and weights, mark sets complete, and verify the rest timer starts.
-5. Finish the workout after all sets are complete.
-6. Visit History and confirm the completed workout appears with duration and volume.
-7. Visit Exercises, search for `press`, filter by muscle group/difficulty, and open demo links.
-8. Edit Profile and confirm the saved values persist after refresh.
+RLS sanity check: create two different app users and complete a workout with only one of them. Each user should only see their own profile, history, logs, and progress in the app. The shared exercise and plan catalog should appear for both users.
 
-Useful checks:
+## Security Notes
+
+- `.env` and `.env.local` are ignored by Git.
+- Never commit Supabase service-role keys.
+- Never place secret keys in frontend code.
+- Supabase Auth stores passwords securely; the app does not handle password hashes.
+- User-owned tables use `auth.uid()` RLS policies.
+- Public workout catalog tables are read-only for authenticated users.
+
+## Deployment To Vercel
+
+1. Push the repo to GitHub.
+2. In Vercel, import the GitHub repository.
+3. Framework preset: `Next.js`.
+4. Build command: `npm run build`.
+5. Install command: `npm install`.
+6. Add environment variables:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+NEXT_PUBLIC_APP_URL="https://your-vercel-domain.vercel.app"
+```
+
+7. Deploy.
+
+After deployment, open Supabase `Authentication > URL Configuration` and set:
+
+- Site URL: your Vercel URL
+- Redirect URLs: your Vercel URL and local URL if you still test locally
+
+## Git Commands
 
 ```bash
+git status
+git add .
+git commit -m "Migrate ForgeFit to Supabase with RLS"
+git push -u origin main
+```
+
+## Quality Checks
+
+```bash
+npm run lint
 npm run typecheck
 npm run build
 ```
 
 ## Architecture
 
-- `app/api/*`: typed Next.js route handlers for auth, profile, workout plans, logging, history, exercises, and progress.
-- `app/*/ui.tsx`: client views using TanStack Query for caching and mutations.
-- `components/ui`: reusable shadcn-style UI primitives.
-- `components/app-shell.tsx`: protected app navigation and responsive mobile tab bar.
-- `lib/auth.ts`: JWT creation, verification, and secure cookie management.
-- `lib/prisma.ts`: Prisma singleton.
-- `prisma/schema.prisma`: relational database design for users, plans, workouts, exercises, logs, progress, and history.
-- `prisma/seed.ts`: realistic seed data and a demo user.
-
-## Deployment Notes
-
-### Vercel
-
-Set these environment variables in Vercel:
-
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `NEXT_PUBLIC_APP_URL`
-
-Build command:
-
-```bash
-npm run build
-```
-
-Before first production use, run Prisma migration or `prisma db push` against the production database, then seed if desired.
-
-### Railway/Supabase/Postgres
-
-Create a PostgreSQL database and copy its connection string into `DATABASE_URL`. Keep `JWT_SECRET` private and at least 32 characters long.
+- `app/api/*`: Next.js route handlers using Supabase Auth session cookies and RLS-backed queries.
+- `lib/supabase.ts`: Supabase SSR client and current-user profile helper.
+- `lib/db-mappers.ts`: Converts Supabase snake_case rows into the camelCase shape the UI expects.
+- `supabase.sql`: Full database schema, seed catalog, triggers, and RLS policies.
+- `components/app-shell.tsx`: Protected navigation and responsive app shell.
+- `app/*/ui.tsx`: Client screens using TanStack Query for caching and mutations.

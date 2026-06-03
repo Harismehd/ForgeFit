@@ -12,14 +12,21 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/client-api";
 
 type FormValues = { name: string; email: string; password: string };
+type SignupResponse = { requiresEmailConfirmation?: boolean; message?: string };
 
 export default function SignupPage() {
   const router = useRouter();
   const { register, handleSubmit, formState } = useForm<FormValues>();
+  const { errors } = formState;
 
   async function onSubmit(values: FormValues) {
     try {
-      await api("/api/auth/signup", { method: "POST", body: JSON.stringify(values) });
+      const result = await api<SignupResponse>("/api/auth/signup", { method: "POST", body: JSON.stringify(values) });
+      if (result.requiresEmailConfirmation) {
+        toast.success(result.message ?? "Account created. Confirm your email before logging in.");
+        router.push("/login");
+        return;
+      }
       toast.success("Account created. Let's tune your profile next.");
       router.push("/profile");
       router.refresh();
@@ -39,18 +46,50 @@ export default function SignupPage() {
         </div>
         <Card className="p-6">
           <h2 className="text-xl font-bold">Create your account</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+          <form
+            onSubmit={handleSubmit(onSubmit, () => {
+              toast.error("Please fix the highlighted signup fields.");
+            })}
+            className="mt-6 space-y-4"
+            noValidate
+          >
             <div className="space-y-2">
               <Label>Name</Label>
-              <Input {...register("name", { required: true, minLength: 2 })} />
+              <Input
+                autoComplete="name"
+                aria-invalid={Boolean(errors.name)}
+                {...register("name", {
+                  required: "Enter your name.",
+                  minLength: { value: 2, message: "Name must be at least 2 characters." }
+                })}
+              />
+              {errors.name?.message ? <p className="text-xs font-medium text-destructive">{errors.name.message}</p> : null}
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input type="email" {...register("email", { required: true })} />
+              <Input
+                type="email"
+                autoComplete="email"
+                aria-invalid={Boolean(errors.email)}
+                {...register("email", {
+                  required: "Enter your email.",
+                  pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email address." }
+                })}
+              />
+              {errors.email?.message ? <p className="text-xs font-medium text-destructive">{errors.email.message}</p> : null}
             </div>
             <div className="space-y-2">
               <Label>Password</Label>
-              <Input type="password" {...register("password", { required: true, minLength: 8 })} />
+              <Input
+                type="password"
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.password)}
+                {...register("password", {
+                  required: "Enter a password.",
+                  minLength: { value: 8, message: "Password must be at least 8 characters." }
+                })}
+              />
+              {errors.password?.message ? <p className="text-xs font-medium text-destructive">{errors.password.message}</p> : null}
             </div>
             <Button disabled={formState.isSubmitting} className="w-full" size="lg">
               {formState.isSubmitting ? "Creating..." : "Start training"}

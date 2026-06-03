@@ -15,9 +15,7 @@ type FormValues = { email: string; password: string };
 
 export default function LoginPage() {
   const router = useRouter();
-  const { register, handleSubmit, formState } = useForm<FormValues>({
-    defaultValues: { email: "demo@forgefit.app", password: "ForgeFit123!" }
-  });
+  const { register, handleSubmit, formState } = useForm<FormValues>();
 
   async function onSubmit(values: FormValues) {
     try {
@@ -44,7 +42,7 @@ export default function LoginPage() {
         </div>
         <Card className="p-6">
           <h2 className="text-xl font-bold">Log in</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Use the seeded demo account or your own profile.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Use the account you create in this Supabase project.</p>
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
             <div className="space-y-2">
               <Label>Email</Label>
