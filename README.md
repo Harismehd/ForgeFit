@@ -22,33 +22,6 @@ ForgeFit leverages a cutting-edge, highly performant tech stack:
 - **Components**: Accessible, unstyled components from [Radix UI](https://www.radix-ui.com/), styled beautifully with [shadcn/ui](https://ui.shadcn.com/) patterns.
 - **Backend & Database**: [Supabase](https://supabase.com/) provides a fully managed PostgreSQL database, complete with built-in Authentication and Row Level Security (RLS) to ensure mathematical data isolation between users.
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+
-- A Supabase Project (Database schema initialized)
-
-### Environment Setup
-
-Create a `.env.local` file in the root of the project and add your public Supabase credentials:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-```
-
-### Installation
-
-Install the dependencies and start the development server:
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application running.
-
 ## 📐 Architecture Overview
 
 - **`app/`**: Contains the Next.js App Router structure, including pages, layouts, and backend API route handlers (`app/api/*`).
